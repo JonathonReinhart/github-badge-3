@@ -57,10 +57,9 @@ def smarttruncate(value, length=80, suffix='...', pattern=r'\w+'):
 
 # utility functions
 # ==============================================================
-def run_query(query): # A simple function to use requests.post to make the API call. Note the json= section.
+def run_query(query, apikey): # A simple function to use requests.post to make the API call. Note the json= section.
 	# modified from https://gist.github.com/gbaman/b3137e18c739e0cf98539bf4ec4366ad
-	global GITHUB_API_KEY
-	headers = {"Authorization": "Bearer "+GITHUB_API_KEY}
+	headers = {"Authorization": "Bearer "+apikey}
 	request = requests.post('https://api.github.com/graphql', json={'query': query}, headers=headers)
 	if request.status_code == 200:
 		return request.json()
@@ -71,9 +70,7 @@ def file2str(path):
 	with open(path, 'r') as file:
 		return file.read().strip()
 
-def renderSaveAs(template_file,out_file,context):
-	global G_j2_env
-	template = G_j2_env.get_template(template_file)
+def renderSaveAs(template, out_file, context):
 	rendered_html = template.render(context)
 
 	with open(out_file, "w", encoding='utf-8') as fp:
@@ -180,44 +177,43 @@ def GitHubStats(rObj):
 	return retVal
 
 
+def main():
+	# print jinja and python version
+	print('Script is running jinja v{} on Python v{}'.format(jinja2_version,python_version()))
 
+	# load config file
+	with open("config.json", "r", encoding='utf-8') as fp:
+		config = json.load(fp)
 
-# Main thread
-# ==============================================================
+	# prep query data
+	query = file2str(config['queryfile']) \
+		.replace('$USERNAME$', config['username']) \
+		.replace('$TIMESTAMP_7DAYSAGO$', (datetime.now() - timedelta(7)).isoformat()) \
+		.replace('$TIMESTAMP_YESTERDAY$', (datetime.now() - timedelta(1)).isoformat())
 
-# print jinja and python version
-print('Script is running jinja v{} on Python v{}'.format(jinja2_version,python_version()))
+	# get data
+	print('running GitHub GraphQL query ...\n')
+	result = run_query(query, config['apikey'])
 
-# load config file
-with open("config.json", "r", encoding='utf-8') as fp:
-	config = json.load(fp)
+	# process data
+	userdata = GitHubStats(result)
+	GH_Data = {
+		'user': userdata,
+		'days': 7,
+		'support': True,
+		'commit_sparkline': gen_SparklineSVG(userdata['contribs'])
+	}
 
-# prep query data
-GITHUB_API_KEY = config['apikey']
-query = file2str(config['queryfile']) \
-	.replace('$USERNAME$', config['username']) \
-	.replace('$TIMESTAMP_7DAYSAGO$', (datetime.now() - timedelta(7)).isoformat()) \
-	.replace('$TIMESTAMP_YESTERDAY$', (datetime.now() - timedelta(1)).isoformat())
+	# setup jinja2
+	print('\nrunning jinja2 ...')
+	G_j2_env = Environment( loader=FileSystemLoader('.') )
+	G_j2_env.globals['DATETIME_NOW'] = datetime.now()
+	G_j2_env.filters['shortnum'] = shortnum
+	G_j2_env.filters['smarttruncate'] = smarttruncate
 
-# get data
-print('running GitHub GraphQL query ...\n')
-result = run_query(query)
+	# generate / render badge.html
+	template = G_j2_env.get_template('badge.j2')
+	renderSaveAs(template, 'badge.html', GH_Data)
 
-# process data
-userdata = GitHubStats(result)
-GH_Data = {
-	'user': userdata,
-	'days': 7,
-	'support': True,
-	'commit_sparkline': gen_SparklineSVG(userdata['contribs'])
-}
-
-# setup jinja2
-print('\nrunning jinja2 ...')
-G_j2_env = Environment( loader=FileSystemLoader('.') )
-G_j2_env.globals['DATETIME_NOW'] = datetime.now()
-G_j2_env.filters['shortnum'] = shortnum
-G_j2_env.filters['smarttruncate'] = smarttruncate
-
-# generate / render badge.html
-renderSaveAs('badge.j2','badge.html',GH_Data)
+if __name__ == '__main__':
+	main()
