@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import requests
+from pathlib import Path
 from pprint import pprint
 from datetime import datetime, timedelta
 from platform import python_version
@@ -10,10 +11,7 @@ from jinja2 import __version__ as jinja2_version
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 
-
-# ensure script working dir
-os.chdir(sys.path[0])
-
+mydir = Path(__file__).resolve().parent
 
 # code from GitHub\github-badge\app\customfilters.py
 # ==============================================================
@@ -177,13 +175,24 @@ def GitHubStats(rObj):
 	return retVal
 
 
+def load_config(path):
+	cfgpath = Path(path)
+	with open(cfgpath, "r", encoding='utf-8') as fp:
+		config = json.load(fp)
+
+	qfpath = Path(config['queryfile'])
+	if not qfpath.is_absolute():
+		qfpath = cfgpath.parent / qfpath
+	config['queryfile'] = qfpath
+
+	return config
+
+
 def main():
 	# print jinja and python version
 	print('Script is running jinja v{} on Python v{}'.format(jinja2_version,python_version()))
 
-	# load config file
-	with open("config.json", "r", encoding='utf-8') as fp:
-		config = json.load(fp)
+	config = load_config(mydir / "config.json")
 
 	# prep query data
 	query = file2str(config['queryfile']) \
@@ -206,7 +215,7 @@ def main():
 
 	# setup jinja2
 	print('\nrunning jinja2 ...')
-	G_j2_env = Environment( loader=FileSystemLoader('.') )
+	G_j2_env = Environment( loader=FileSystemLoader(mydir) )
 	G_j2_env.globals['DATETIME_NOW'] = datetime.now()
 	G_j2_env.filters['shortnum'] = shortnum
 	G_j2_env.filters['smarttruncate'] = smarttruncate
