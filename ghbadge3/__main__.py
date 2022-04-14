@@ -188,6 +188,8 @@ def parse_args():
 	ap = argparse.ArgumentParser()
 	ap.add_argument('-c', '--config', required=True,
 			help="Path to config file")
+	ap.add_argument('-o', '--outpath', default="badge.hml",
+            help="Output path to generated file")
 	return ap.parse_args()
 
 def main():
@@ -226,7 +228,7 @@ def main():
 
 	# generate / render badge.html
 	template = G_j2_env.get_template('badge.j2')
-	renderSaveAs(template, 'badge.html', GH_Data)
+	renderSaveAs(template, args.outpath, GH_Data)
 
 if __name__ == '__main__':
 	main()
