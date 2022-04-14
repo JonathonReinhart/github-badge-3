@@ -1,10 +1,15 @@
-# github-badge-2
+# github-badge-3
  
-Simpler implementation, utilizing GitHub's GraphQL API, and fork of:  
-https://github.com/berkerpeksag/github-badge
+Cleaned-up implementation, and fork of:  
+https://github.com/joedf/github-badge-2
+
+## Setup
+- Install `jinja2` and `requests.
+- Update `config.json` with your username and github api_key that has user repo read access and user activity.
 
 ## Usage
-Simply update `config.json` with your username and github api_key that has user repo read access and user activity. Run the `generate_badge.py` script with python v3.4+, with `jinja2` and `requests` installed.
+- Update `config.json` with your username and github api_key that has user repo read access and user activity.
+- Run `python3 -m ghbadge3 -c config.json`.
 
 Then, set up a cron job or whatever you can use for a recurring / scheduled tasks to run the script periodically (something like every 24hrs) to update the generated `badge.html`. Or you can setup a free jinja webapp like on [pythonanywhere.com](https://pythonanywhere.com/) and simply check if the generated html exists or if modified date of the html file is greater than 1 day, see [example script](https://gist.github.com/joedf/84279ff7647d554a9d15f280a209c6b7).
 
