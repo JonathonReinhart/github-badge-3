@@ -188,11 +188,20 @@ def load_config(path):
 	return config
 
 
+def parse_args():
+	import argparse
+	ap = argparse.ArgumentParser()
+	ap.add_argument('-c', '--config', required=True,
+			help="Path to config file")
+	return ap.parse_args()
+
 def main():
+	args = parse_args()
+
 	# print jinja and python version
 	print('Script is running jinja v{} on Python v{}'.format(jinja2_version,python_version()))
 
-	config = load_config(mydir / "config.json")
+	config = load_config(args.config)
 
 	# prep query data
 	query = file2str(config['queryfile']) \
