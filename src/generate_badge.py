@@ -180,11 +180,6 @@ def load_config(path):
 	with open(cfgpath, "r", encoding='utf-8') as fp:
 		config = json.load(fp)
 
-	qfpath = Path(config['queryfile'])
-	if not qfpath.is_absolute():
-		qfpath = cfgpath.parent / qfpath
-	config['queryfile'] = qfpath
-
 	return config
 
 
@@ -204,7 +199,7 @@ def main():
 	config = load_config(args.config)
 
 	# prep query data
-	query = file2str(config['queryfile']) \
+	query = file2str(mydir / 'query.gql') \
 		.replace('$USERNAME$', config['username']) \
 		.replace('$TIMESTAMP_7DAYSAGO$', (datetime.now() - timedelta(7)).isoformat()) \
 		.replace('$TIMESTAMP_YESTERDAY$', (datetime.now() - timedelta(1)).isoformat())
